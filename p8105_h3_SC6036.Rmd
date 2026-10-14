@@ -3,4 +3,15 @@ title: "HW3"
 output: html_document
 date: "2026-10-14"
 ---
+```{r}
+library(tidyverse)
+```
+
 ## Question 1
+```{r}
+library(p8105.datasets)
+data("ny_noaa")
+summary(ny_noaa)
+```
+This data set has 7 variables and 2,595,176 rows of data. Key variables include, id, data, prcp, snow, snwd, tmax, and tmin. There are quite a lot of NA values, especially in the tmax and tmin variables. 
+
