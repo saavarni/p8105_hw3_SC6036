@@ -5,6 +5,7 @@ date: "2026-10-14"
 ---
 ```{r}
 library(tidyverse)
+library(lubridate)
 ```
 
 ## Question 1
@@ -14,4 +15,15 @@ data("ny_noaa")
 summary(ny_noaa)
 ```
 This data set has 7 variables and 2,595,176 rows of data. Key variables include, id, data, prcp, snow, snwd, tmax, and tmin. There are quite a lot of NA values, especially in the tmax and tmin variables. 
+
+```{r}
+ny_noaa <- 
+  ny_noaa |> 
+  mutate(
+    year = year(date),
+    month = month(date),
+    day = day(date)
+  )
+ny_noaa
+```
 
