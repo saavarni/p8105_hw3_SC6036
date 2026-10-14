@@ -1,0 +1,6 @@
+---
+title: "HW3"
+output: html_document
+date: "2026-10-14"
+---
+## Question 1
