@@ -17,13 +17,19 @@ summary(ny_noaa)
 This data set has 7 variables and 2,595,176 rows of data. Key variables include, id, data, prcp, snow, snwd, tmax, and tmin. There are quite a lot of NA values, especially in the tmax and tmin variables. 
 
 ```{r}
+# Data Cleaning and Converting Units
 ny_noaa <- 
   ny_noaa |> 
   mutate(
     year = year(date),
     month = month(date),
-    day = day(date)
+    day = day(date),
+    tmax = as.numeric(tmax) / 10,
+    tmin = as.numeric(tmin) / 10, 
+    prcp = prcp / 10
   )
-ny_noaa
+summary(ny_noaa)
 ```
-
+prcp: Precipitation (tenths of mm)
+snow: Snowfall (mm)
+temp: (tenths of degrees C)
