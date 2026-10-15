@@ -6,6 +6,8 @@ date: "2026-10-14"
 ```{r}
 library(tidyverse)
 library(lubridate)
+library(patchwork)
+library(hexbin)
 ```
 
 ## Question 1
@@ -33,3 +35,50 @@ summary(ny_noaa)
 prcp: Precipitation (tenths of mm)
 snow: Snowfall (mm)
 temp: (tenths of degrees C)
+
+```{r}
+ny_noaa |> 
+  count(snow, sort = T)
+```
+For snowfall, the most commonly observed value is 0, because it doesn't snow most days of the year. 
+
+```{r}
+ny_noaa |> 
+  filter(month == 1 | month == 7) |>      # Jan or July only
+  group_by(id, year, month) |>      # per each station and year
+  summarize(mean_tmax = mean(tmax, na.rm = T), .groups = "drop") |>     # dropping NA to remove clutter
+  drop_na(mean_tmax) |> 
+  mutate(month = factor(month, levels = c(1, 7), labels = c("January", "July"))) |> 
+  ggplot(aes(x = year, y = mean_tmax, group = id)) +
+  geom_point(alpha = 0.2, size = 0.8) +
+  geom_line(alpha = 0.1) +
+  facet_grid(. ~ month) +
+  labs(x = "Year", y = "Mean max temperature (°C)",
+       title = "Average Max Temperature in January vs July, per station")+
+  theme_minimal()
+```
+From these plots, we can see that the average max temperature in January is much lower compared to July. In January, the range is from about 10°C to as low as below -10°C. In July it is as hot as over 30°C to about 20°C, with an outlier of ~14°C.
+
+```{r}
+p1 <- ny_noaa |> 
+  drop_na(tmax, tmin) |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_hex() +
+  labs(x = "tmin (°C)", y = "tmax (°C)", title = "tmax vs tmin") +
+  theme_minimal()
+
+p2 <- ny_noaa |> 
+  filter(snow > 0, snow < 100) |> 
+  mutate(year = factor(year)) |> 
+  ggplot(aes(x = year, y = snow)) +
+  geom_violin() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  labs(x = "year", y = "snowfall (mm)", title = "snowfall between 0 and 100 mm") +
+  theme_minimal()
+
+p1 + p2
+```
+
+
+
+
