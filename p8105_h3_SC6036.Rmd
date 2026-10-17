@@ -53,7 +53,7 @@ ny_noaa |>
   geom_point(alpha = 0.2, size = 0.8) +
   geom_line(alpha = 0.1) +
   facet_grid(. ~ month) +
-  labs(x = "Year", y = "Mean max temperature (°C)",
+  labs(x = "Year", y = "Mean max temperature °C",
        title = "Average Max Temperature in January vs July, per station")+
   theme_minimal()
 ```
@@ -77,6 +77,12 @@ p2 <- ny_noaa |>
   theme_minimal()
 
 p1 + p2
+```
+
+## Question 2
+```{r}
+nhanes_accel <- read_csv("data/nhanes_accel.csv")
+nhanes_covar <- read_csv("data/nhanes_covar.csv")
 ```
 
 
