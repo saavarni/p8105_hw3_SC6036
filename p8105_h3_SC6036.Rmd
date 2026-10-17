@@ -65,7 +65,7 @@ p1 <- ny_noaa |>
   ggplot(aes(x = tmin, y = tmax)) +
   geom_hex() +
   labs(x = "tmin (°C)", y = "tmax (°C)", title = "tmax vs tmin") +
-  theme_minimal()
+  theme_minimal() 
 
 p2 <- ny_noaa |> 
   filter(snow > 0, snow < 100) |> 
