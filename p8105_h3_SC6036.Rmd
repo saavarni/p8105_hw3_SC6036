@@ -1,6 +1,6 @@
 ---
 title: "HW3"
-output: html_document
+output: github_document
 date: "2026-10-14"
 ---
 ```{r}
@@ -16,7 +16,7 @@ library(p8105.datasets)
 data("ny_noaa")
 summary(ny_noaa)
 ```
-This data set has 7 variables and 2,595,176 rows of data. Key variables include, id, data, prcp, snow, snwd, tmax, and tmin. There are quite a lot of NA values, especially in the tmax and tmin variables. 
+This data set has `r nrow(ny_noaa)` rows and `r ncol(ny_noaa)` columns. Key variables include, id, date, prcp, snow, snwd, tmax, and tmin. There are quite a lot of NA values, especially in the tmax and tmin variables. 
 
 ```{r}
 # Data Cleaning and Converting Units
@@ -59,32 +59,36 @@ ny_noaa |>
 ```
 From these plots, we can see that the average max temperature in January is much lower compared to July. In January, the range is from about 10°C to as low as below -10°C. In July it is as hot as over 30°C to about 20°C, with an outlier of ~14°C.
 
-```{r}
+```{r, fig.width = 14, fig.height = 8}
 p1 <- ny_noaa |> 
   drop_na(tmax, tmin) |> 
   ggplot(aes(x = tmin, y = tmax)) +
   geom_hex() +
-  labs(x = "tmin (°C)", y = "tmax (°C)", title = "tmax vs tmin") +
-  theme_minimal() 
+  labs(x = "tmin (°C)", y = "tmax (°C)", title = "Max Temp vs Min Temp") +
+  theme_classic()
 
 p2 <- ny_noaa |> 
   filter(snow > 0, snow < 100) |> 
   mutate(year = factor(year)) |> 
   ggplot(aes(x = year, y = snow)) +
-  geom_violin() +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
-  labs(x = "year", y = "snowfall (mm)", title = "snowfall between 0 and 100 mm") +
-  theme_minimal()
-
+  geom_boxplot() +
+  labs(x = "year", y = "snowfall (mm)", title = "Snowfall Between 0 and 100 mm") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+  
 p1 + p2
 ```
+There is a a strong positive relationship between tmax and tmin.
+For snowfall, the shape is similar across years, with most values being small values.
+The stations move together every year, with a few outliers of a cold or warm January.
+
+
 
 ## Question 2
 ```{r}
 nhanes_accel <- read_csv("data/nhanes_accel.csv")
 nhanes_covar <- read_csv("data/nhanes_covar.csv")
 ```
-
 
 
 
