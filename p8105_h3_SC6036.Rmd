@@ -22,6 +22,7 @@ This data set has `r nrow(ny_noaa)` rows and `r ncol(ny_noaa)` columns. Key vari
 # Data Cleaning and Converting Units
 ny_noaa <- 
   ny_noaa |> 
+  drop_na() |>
   mutate(
     year = year(date),
     month = month(date),
@@ -31,10 +32,11 @@ ny_noaa <-
     prcp = prcp / 10
   )
 summary(ny_noaa)
+
+# prcp: Precipitation (tenths of mm)
+# snow: Snowfall (mm)
+# temp: (tenths of degrees C)
 ```
-prcp: Precipitation (tenths of mm)
-snow: Snowfall (mm)
-temp: (tenths of degrees C)
 
 ```{r}
 ny_noaa |> 
@@ -53,42 +55,128 @@ ny_noaa |>
   geom_point(alpha = 0.2, size = 0.8) +
   geom_line(alpha = 0.1) +
   facet_grid(. ~ month) +
-  labs(x = "Year", y = "Mean max temperature °C",
+  labs(x = "Year", 
+       y = "Mean max temperature Celsius",
        title = "Average Max Temperature in January vs July, per station")+
-  theme_minimal()
+  theme_classic()
 ```
-From these plots, we can see that the average max temperature in January is much lower compared to July. In January, the range is from about 10°C to as low as below -10°C. In July it is as hot as over 30°C to about 20°C, with an outlier of ~14°C.
+From these plots, we can see that the average max temperature in January is much lower compared to July. In January, the range is from about 10°C to below -10°C. In July it is as hot as over 30°C to about 20°C, with an outlier of ~14°C.
 
 ```{r, fig.width = 14, fig.height = 8}
+# tmax vs tmin
 p1 <- ny_noaa |> 
   drop_na(tmax, tmin) |> 
   ggplot(aes(x = tmin, y = tmax)) +
   geom_hex() +
-  labs(x = "tmin (°C)", y = "tmax (°C)", title = "Max Temp vs Min Temp") +
+  labs(x = "tmin Celsius", 
+       y = "tmax Celsius", 
+       title = "Max Temp vs Min Temp") +
   theme_classic()
 
+# snowfall 
 p2 <- ny_noaa |> 
   filter(snow > 0, snow < 100) |> 
   mutate(year = factor(year)) |> 
   ggplot(aes(x = year, y = snow)) +
   geom_boxplot() +
-  labs(x = "year", y = "snowfall (mm)", title = "Snowfall Between 0 and 100 mm") +
+  labs(x = "year", 
+       y = "snowfall (mm)", 
+       title = "Snowfall Between 0 and 100 mm") +
   theme_classic() +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, vjust = 3, hjust = 3))
   
 p1 + p2
 ```
-There is a a strong positive relationship between tmax and tmin.
-For snowfall, the shape is similar across years, with most values being small values.
-The stations move together every year, with a few outliers of a cold or warm January.
+There is a a strong positive relationship between tmax and tmin. The cluster is dense in moderate temps of about 0 - 15 Celsius minimum, and 10 - 25 Celsius maximum.
+For snowfall, the shape is similar across years, with most values being small values. A few years that stand out however, are 1997, 2003, 2005, 2006, and 2009. 
 
 
 
 ## Question 2
 ```{r}
-nhanes_accel <- read_csv("data/nhanes_accel.csv")
-nhanes_covar <- read_csv("data/nhanes_covar.csv")
+nhanes_accel <- read_csv("data/nhanes_accel.csv") |> 
+  janitor::clean_names()
+nhanes_covar <- read_csv("data/nhanes_covar.csv", skip = 4) |> 
+    janitor::clean_names()
 ```
+
+```{r}
+# cleaning 
+nhanes_df <- 
+  nhanes_covar |> 
+  drop_na() |>                       # drop people wiht missing demographic data
+  filter(age >= 21) |>               # adults 
+  mutate(
+    sex = factor(sex, levels = c(1, 2), 
+                 labels = c("Male", "Female")),
+    education = factor(education, levels = c(1, 2, 3),
+                       labels = c("Less than high school", 
+                                  "High school equivalent", 
+                                  "More than high school"))
+  ) |> 
+  inner_join(nhanes_accel, by = "seqn") 
+```
+
+# table of men and women by education
+```{r}
+nhanes_df |> 
+  count(education, sex) |> 
+  pivot_wider(names_from = sex, values_from = n) |> 
+  knitr::kable(col.names = c("Education", "Male", "Female"))
+```
+
+# age distribution by sex and education 
+```{r}
+nhanes_df |> 
+  ggplot(aes(x = education, y = age, fill = sex)) +
+  geom_boxplot() +
+  labs(x = "Education", y = "Age ", fill = "Sex",
+       title = "Age Distribution in years by Sex and Education")
+```
+
+# total activity by age
+```{r}
+nhanes_df <- 
+  nhanes_df |> 
+  mutate(total_activity = rowSums(across(starts_with("min"))))
+
+nhanes_df |> 
+  ggplot(aes(x = age, y = total_activity, color = sex)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(se = F) +
+  facet_grid(. ~ education) +
+  labs(x = "Age (years)", y = "Total daily activity", color = "Sex",
+       title = "Total Activity by Age, by Sex and Education") 
+```
+In the More than high school group, women are more active than men at most ages, with the gap narrowing in later life.
+Across all three education levels, total daily activity declines with age, especially around the age of 60. In the High School Equivalent group, women are generally more active than men as well. In the Less the High School group, the activity is led by women, with men being more active after the age of about 40. 
+
+# 24 Hr plot
+```{r}
+nhanes_df |> 
+  pivot_longer(starts_with("min"), 
+               names_to = "minute", 
+               names_prefix = "min", 
+               values_to = "mims") |> 
+  mutate(hour = as.numeric(minute) / 60) |> 
+  group_by(education, sex, hour) |> 
+  summarize(mean_mims = mean(mims), .groups = "drop") |> 
+  ggplot(aes(x = hour, 
+             y = mean_mims, 
+             color = sex)) +
+  geom_line(alpha = 0.3) +
+  facet_grid(. ~ education) +
+  geom_smooth(se = F) +
+  labs(x = "Hour of day", 
+       y = "Average activity", 
+       color = "Sex",
+       title = "Daily Activity by Education and Sex") + 
+  theme_classic()
+```
+In all three education groups, the mean activity througout the day is about the same. Activity is lowest around 4am and riced between 5 am and 9 am. In the High schol equivalent and more than high school groups, there is a bit of deviation from the mal and femlale groups, with females have higher mean activity. It is hard to tell is higher education is associated with more daytime actifiy level, but there does seem to be the most acitivty in the less than high school group. 
+
+## Question 3
+
 
 
 
