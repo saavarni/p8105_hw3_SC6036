@@ -177,6 +177,85 @@ In all three education groups, the mean activity througout the day is about the 
 
 ## Question 3
 
+```{r}
+jan_2020 = 
+  read_csv("data/Jan2020Citi.csv") |> 
+  janitor::clean_names() |> 
+  mutate(year = "2020", month = "January")
+
+july_2020 = 
+  read_csv("data/July2020Citi.csv") |> 
+  janitor::clean_names() |> 
+  mutate(year = "2020", month = "July")
+
+jan_2024 = 
+  read_csv("data/Jan2024Citi.csv") |> 
+  janitor::clean_names() |> 
+  mutate(year = "2024", month = "January")
+
+july_2024 = 
+  read_csv("data/July2024Citi.csv") |> 
+  janitor::clean_names() |> 
+  mutate(year = "2024", month = "July")
+
+citi_df = 
+  bind_rows(jan_2020, july_2020, jan_2024, july_2024) |> 
+  mutate(weekdays = factor(weekdays, levels = c("Monday", "Tuesday", "Wednesday", 
+                                                "Thursday", "Friday", "Saturday", "Sunday")))
+```
+The combined dataset has `r nrow(citi_df)` rides and `r ncol(citi_df)` variables, 
+from January and July of 2020 - 2024. The variables for each ride contain an ID, bike type, day of the week, duration in minutes, start/end station, rider type member/casual. For tidyness, I added a month and year variable. 
+
+# rides by month year, ride type
+```{r}
+citi_df |> 
+  count(year, 
+        month, 
+        member_casual) |> 
+  pivot_wider(names_from = member_casual, values_from = n) |> 
+  knitr::kable(col.names = c("year", " month", "casual", "member"))
+```
+
+# top 5 start stations , July 2024
+```{r}
+citi_df |> 
+  filter(year == "2024", month == "July") |> 
+  count(start_station_name, sort = T) |> 
+  head(5) |> 
+  knitr::kable(col.names = c("start station", "Num Rides"))
+```
+
+# plot, median duration 
+```{r}
+citi_df |> 
+  group_by(year, 
+           month, 
+           weekdays) |> 
+  summarize(median_duration = median(duration), .groups = "drop") |> 
+  ggplot(aes(x = weekdays, y = median_duration, color = year)) +
+  geom_point() +
+  geom_line(aes(group = year)) +
+  facet_grid(. ~ month) +
+  labs(x = "Day of week", y = "Median ride in minutes", color = "Year",
+       title = "Median Ride Duration by Day, Month, and Year") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+```
+Ride durations are much longer in July than in January, with with the weekends have a longer ride than during the weekday. In July 2020, there was a dip on Friday, from what we can see. These things can be due to temperature and work schedules. Overall, 2020 ride durations are longer than 2024. 
+
+# 2024 ride durations
+```{r}
+citi_df |> 
+  filter(year == "2024") |> 
+  ggplot(aes(x = month, 
+             y = duration, 
+             fill = member_casual)) +
+  geom_boxplot() +
+  facet_grid(. ~ rideable_type) +
+  scale_y_log10() +
+  labs(x = "month", y = "minutes", fill = "Rider type",
+       title = "2024 ride durations by month, rider type, bike type")
+```
+I used the log scale for this plot for better readability. Casual riders take longer rides than members across every combinition of month and bike type. July rides are longer than January across both groups. Classic bikes have longer rides than electric bikes, especially in casual riders.
 
 
 
